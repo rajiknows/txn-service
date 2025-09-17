@@ -1,11 +1,10 @@
 use crate::db::get_pool;
 use dotenvy::dotenv;
-use poem::{EndpointExt, Route, Server, get, listener::TcpListener, post, web::Data};
+use poem::{EndpointExt, Route, Server, get, handler, listener::TcpListener, post};
 
 mod db;
 mod handlers;
 mod model;
-mod schema;
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
@@ -14,6 +13,7 @@ async fn main() -> Result<(), std::io::Error> {
     let pool = get_pool(&db_url).await;
 
     let app = Route::new()
+        .at("/health", get(health))
         .at("/accounts", post(handlers::accounts::create_account))
         .at("/accounts/:id", get(handlers::accounts::get_account))
         .data(pool);
@@ -22,4 +22,9 @@ async fn main() -> Result<(), std::io::Error> {
     Server::new(TcpListener::bind("0.0.0.0:8080"))
         .run(app)
         .await
+}
+
+#[handler]
+async fn health() -> &'static str {
+    "ok"
 }
